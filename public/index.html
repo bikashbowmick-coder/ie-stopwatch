@@ -1,0 +1,286 @@
+<!DOCTYPE html>
+<html lang="bn">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>IE Stopwatch</title>
+<meta name="theme-color" content="#1d1e22">
+<meta name="description" content="Multi-stopwatch with laps and capacity calculation for time studies.">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<link rel="manifest" href="/manifest.webmanifest">
+<link rel="icon" href="/icons/icon.svg" type="image/svg+xml">
+<link rel="apple-touch-icon" href="/icons/apple-touch-icon.png">
+<link href="https://fonts.googleapis.com/css2?family=Archivo:wght@500;700;800&family=JetBrains+Mono:wght@400;600;700&display=swap" rel="stylesheet">
+<style>
+:root{--bg:#1d1e22;--card:#2a2c32;--card2:#24262b;--line:rgba(255,255,255,.08);--tx:#f2f2f4;--mu:#8d9098;--or:#f5762e;--yl:#f6b400;--track:#18191c;color-scheme:dark;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+@media(prefers-color-scheme:light){:root:not([data-theme=dark]){--bg:#e8e9ed;--card:#fff;--card2:#f3f4f7;--line:rgba(0,0,0,.09);--tx:#1b1c1f;--mu:#6b6e76;--track:#dcdde2;color-scheme:light}}
+:root[data-theme=dark]{--bg:#1d1e22}
+html{scroll-padding-top:env(safe-area-inset-top,0px)}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+body{margin:0;background:radial-gradient(120% 60% at 50% -10%,rgba(245,118,46,.13),transparent 60%),var(--bg);background-attachment:fixed;color:var(--tx);font-family:'Archivo',system-ui,'Segoe UI',sans-serif;-webkit-user-select:none;user-select:none}
+button,input{font-family:inherit;touch-action:manipulation}
+.mono{font-family:'JetBrains Mono',ui-monospace,Menlo,monospace}
+.app{max-width:460px;margin:0 auto;padding:14px 16px 120px;display:flex;flex-direction:column;gap:12px}
+.v{display:flex;flex-direction:column;gap:12px}[hidden]{display:none!important}
+.card{background:linear-gradient(180deg,rgba(255,255,255,.035),transparent),var(--card);border:1px solid var(--line);border-radius:24px;box-shadow:0 8px 22px rgba(0,0,0,.22)}
+.lb{font-size:10.5px;letter-spacing:.18em;color:var(--mu);text-transform:uppercase}
+.or{color:var(--or)}
+.seg{display:grid;grid-template-columns:1fr 1fr;padding:4px;border-radius:20px;background:var(--card2);border:1px solid var(--line)}
+.seg button{height:40px;border:0;border-radius:16px;background:none;color:var(--mu);font:700 11px 'JetBrains Mono',monospace;letter-spacing:.16em;cursor:pointer}
+.seg button.on{background:var(--or);color:#1b1c1f;box-shadow:0 4px 14px rgba(245,118,46,.4)}
+header{display:grid;grid-template-columns:42px 1fr 42px;align-items:center;gap:8px}
+.rd{width:42px;height:42px;border-radius:50%;border:1px solid var(--line);background:var(--card);color:var(--tx);font-size:22px;cursor:pointer}.rd:disabled{opacity:.3}
+#nm{background:none;border:0;text-align:center;color:var(--tx);font-size:14px;letter-spacing:.2em;text-transform:uppercase;width:100%;min-width:0;outline:none;padding:8px 0;-webkit-user-select:text;user-select:text}
+.clk{display:grid;grid-template-columns:1fr 1fr;padding:12px 18px}
+.clk>div:first-child{border-right:1px solid var(--line)}.clk>div:last-child{padding-left:18px}
+.cv{font-size:clamp(14px,4.6vw,19px);font-weight:600;margin-top:5px;white-space:nowrap}
+.hero{padding:20px 10px 16px}
+.rings{display:flex;align-items:center;justify-content:center;gap:2%}
+.rw{display:flex;flex-direction:column;align-items:center;gap:7px}.side{width:23%}.mid{width:50%}
+.ring{position:relative;width:100%;aspect-ratio:1}.ring svg{width:100%;height:100%;display:block;filter:drop-shadow(0 0 6px rgba(245,118,46,.25))}
+.num{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;font-weight:800;font-variant-numeric:tabular-nums}
+.side .num{font-size:clamp(15px,4.6vw,22px)}.mid .num{font-size:clamp(44px,14vw,70px);line-height:1}
+.mid .num .lb{font-size:10px;margin-top:7px;font-weight:400}.mid sup{font-size:.38em;vertical-align:super;margin-left:2px}
+.tot{text-align:center;margin-top:14px;font-size:clamp(19px,6vw,27px);color:#a9abb2;font-weight:600}
+.tabs{display:flex;gap:6px;padding:5px;border:1px solid var(--line);border-radius:24px;background:var(--card2);overflow-x:auto;scrollbar-width:none}
+.chip{flex:0 0 auto;min-width:72px;max-width:120px;height:42px;padding:0 15px;border-radius:20px;border:1px solid transparent;background:none;color:var(--mu);font-size:14px;font-weight:700;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;cursor:pointer}
+.chip.on{background:var(--card);border-color:var(--line);color:var(--tx)}
+.chip i{display:inline-block;width:8px;height:8px;border-radius:50%;background:var(--or);margin-right:7px}
+.lh{display:flex;justify-content:space-between;align-items:center;gap:6px}
+.lh div{display:flex;gap:6px}
+.pill{height:32px;padding:0 12px;border-radius:16px;border:1px solid var(--line);background:var(--card);color:var(--tx);font:600 10px 'JetBrains Mono',monospace;letter-spacing:.12em;cursor:pointer;display:flex;align-items:center;gap:6px}
+.pill svg{width:14px;height:14px}
+#laps{display:flex;flex-direction:column;gap:8px;height:324px;overflow-y:auto;overscroll-behavior:contain;-webkit-overflow-scrolling:touch;scrollbar-width:none;padding:2px;background:none}
+#laps::-webkit-scrollbar{display:none}
+.lp{flex:0 0 56px;height:56px;display:grid;grid-template-columns:34px 1fr auto 32px 32px;align-items:center;gap:8px;padding:0 9px 0 12px;border-radius:18px}
+.bd{font:700 12px 'JetBrains Mono',monospace;color:var(--mu)}
+.lv{font-size:22px;font-weight:800;color:var(--or);line-height:1}
+.ls{font-size:11px;color:var(--mu);margin-top:5px}
+.dd{font-size:11px;color:var(--mu);text-align:right}.dd.f{color:var(--or)}
+.ib{width:32px;height:32px;border-radius:50%;border:0;background:var(--card2);color:var(--mu);display:grid;place-items:center;cursor:pointer;padding:0}
+.ib svg{width:15px;height:15px}.ib.arm{background:#e5484d;color:#fff}
+.empty{text-align:center;color:var(--mu);font-size:11px;letter-spacing:.2em;padding:60px 0}
+.ctl{position:fixed;left:0;right:0;bottom:0;z-index:20;max-width:460px;margin:0 auto;display:grid;grid-template-columns:repeat(4,1fr);gap:10px;padding:0 16px calc(12px + env(safe-area-inset-bottom,0px));pointer-events:none}
+.cb{pointer-events:auto;height:60px;border-radius:20px;border:1px solid var(--line);background:var(--card);box-shadow:0 8px 20px rgba(0,0,0,.35);color:var(--tx);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:5px;cursor:pointer}
+.cb span{font-size:10px;letter-spacing:.14em}.cb svg{width:21px;height:21px}
+.cb.pri{background:var(--or);color:#1b1c1f;border-color:transparent;box-shadow:0 8px 22px rgba(245,118,46,.45)}
+.cb:disabled{opacity:.4}.cb:active{transform:scale(.97)}
+.cp{padding:16px;display:flex;flex-direction:column;gap:14px}
+.sg{display:grid;grid-template-columns:repeat(2,1fr);gap:6px}
+.sg button{height:38px;border-radius:14px;border:1px solid var(--line);background:var(--card2);color:var(--mu);font:600 10px 'JetBrains Mono',monospace;letter-spacing:.08em;cursor:pointer}
+.sg button.on{background:var(--or);color:#1b1c1f;border-color:transparent}
+.g2{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.cp label{display:block}
+.cp input{width:100%;margin-top:6px;background:var(--track);border:1px solid var(--line);border-radius:12px;color:var(--tx);font:600 18px 'JetBrains Mono',monospace;padding:9px 11px;-webkit-user-select:text;user-select:text}
+.wt{display:flex;justify-content:space-between;align-items:center;padding-top:12px;border-top:1px solid var(--line)}
+.rs{padding:16px 18px}
+.rs .fm{font-size:13px;color:var(--mu);margin-top:8px}
+.big{font-size:44px;font-weight:800;color:var(--or);line-height:1;margin-top:8px}.big small{font-size:14px;color:var(--mu);font-weight:600;margin-left:6px}
+#toast{position:fixed;left:50%;bottom:104px;transform:translateX(-50%);background:#fff;color:#111;font:600 12px 'JetBrains Mono',monospace;padding:9px 16px;border-radius:20px;opacity:0;pointer-events:none;transition:opacity .2s;z-index:30}
+#toast.on{opacity:1}
+#fv{position:fixed;width:2px;height:2px;opacity:0;pointer-events:none;left:0;top:0}
+</style>
+</head>
+<body>
+<div class="app">
+ <div class="seg" id="seg"><button data-v="T" class="on">TIMER</button><button data-v="C">CALCULATE</button></div>
+
+ <div class="v" id="vT">
+  <header>
+   <button class="rd" id="prev" aria-label="Previous">‹</button>
+   <input id="nm" class="mono" maxlength="20" autocomplete="off" aria-label="Stopwatch name">
+   <button class="rd" id="next" aria-label="Next">›</button>
+  </header>
+  <section class="card clk">
+   <div><div class="lb mono">Start time</div><div class="cv mono" id="cs">--:--:--.---</div></div>
+   <div><div class="lb mono">Stop time</div><div class="cv mono or" id="ce">--:--:--.---</div></div>
+  </section>
+  <section class="card hero">
+   <div class="rings">
+    <div class="rw side"><div class="ring" id="r1"><div class="num mono" id="nMin">00</div></div><div class="lb mono">1 HR</div></div>
+    <div class="rw mid"><div class="ring" id="r2"><div class="num"><div><span id="nSec">00</span><sup>s</sup></div><span class="lb mono">60 SEC</span></div></div></div>
+    <div class="rw side"><div class="ring" id="r3"><div class="num mono" id="nMs">000</div></div><div class="lb mono">MS</div></div>
+   </div>
+   <div class="tot mono" id="tot">00:00.000</div>
+  </section>
+  <nav class="tabs" id="tabs"></nav>
+  <div class="lh"><span class="lb mono" id="lc">Laps</span>
+   <div><button class="pill" id="bCopyAll"></button><button class="pill" id="bFloat">FLOAT</button><button class="pill" id="bDel">REMOVE</button></div></div>
+  <div id="laps"></div>
+ </div>
+
+ <div class="v" id="vC" hidden>
+  <section class="card cp">
+   <div class="lb mono">Time source · <span class="or" id="cw"></span></div>
+   <div class="sg" id="sg"><button data-s="tot">TOTAL TIME</button><button data-s="man">MANUAL</button></div>
+   <div class="g2" id="gM" hidden><label><span class="lb mono">Minutes</span><input id="mm" type="number" inputmode="decimal" min="0"></label><label><span class="lb mono">Seconds</span><input id="ms" type="number" inputmode="decimal" min="0"></label></div>
+   <div class="g2"><label id="lR"><span class="lb mono">Rating %</span><input id="rt" type="number" inputmode="decimal" min="1"></label><label><span class="lb mono">Allowance min/hr</span><input id="al" type="number" inputmode="decimal" min="0"></label></div>
+   <div class="wt"><span class="lb mono">Work time / piece</span><b class="mono or" id="cT" style="font-size:22px">—</b></div>
+  </section>
+  <section class="card rs" id="f1"></section>
+  <section class="card rs" id="f2"></section>
+ </div>
+</div>
+
+<section class="ctl" id="ctl">
+ <button class="cb pri" id="bGo"></button><button class="cb" id="bLap"></button><button class="cb" id="bReset"></button><button class="cb" id="bAdd"></button>
+</section>
+<div id="toast"></div>
+<video id="fv" muted playsinline></video>
+
+<script>
+const $=s=>document.getElementById(s),p2=n=>String(n).padStart(2,'0');
+const esc=s=>String(s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+const sv=p=>'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">'+p+'</svg>';
+const I={play:'<svg viewBox="0 0 24 24"><path d="M8 5v14l11-7z" fill="currentColor"/></svg>',
+ stop:'<svg viewBox="0 0 24 24"><rect x="6" y="6" width="12" height="12" rx="2" fill="currentColor"/></svg>',
+ lap:sv('<path d="M6 21V4M6 5h11l-2 4 2 4H6"/>'),reset:sv('<path d="M3 12a9 9 0 1 0 3-6.7L3 8"/><path d="M3 3v5h5"/>'),add:sv('<path d="M12 5v14M5 12h14"/>'),
+ copy:sv('<rect x="9" y="9" width="11" height="11" rx="2"/><path d="M5 15V6a2 2 0 0 1 2-2h9"/>'),del:sv('<path d="M4 7h16M10 11v6M14 11v6M6 7l1 13h10l1-13M9 7V4h6v3"/>')};
+const lab=(i,t)=>I[i]+'<span class="mono">'+t+'</span>';
+const mk=n=>({name:'SW '+n,base:0,t0:null,laps:[],start:null,stop:null});
+let S=null;try{S=JSON.parse(localStorage.getItem('iesw2'))}catch(e){}
+if(!S){try{const P=JSON.parse(localStorage.getItem('iesw1'));if(P&&P.list)S={list:P.list,sel:P.sel}}catch(e){}}
+if(!S||!S.list||!S.list.length)S={list:[mk(1)]};
+S=Object.assign({sel:0,rt:100,al:5,src:'tot',mm:2,ms:0,view:'T'},S);if(S.sel>=S.list.length)S.sel=0;if(S.src!='man')S.src='tot';
+const save=()=>{try{localStorage.setItem('iesw2',JSON.stringify(S))}catch(e){}};
+const cur=()=>S.list[S.sel],el=w=>w.base+(w.t0?Date.now()-w.t0:0);
+const fmt=ms=>{ms=Math.max(0,Math.floor(ms));const h=Math.floor(ms/3600000),m=Math.floor(ms/60000)%60,s=Math.floor(ms/1000)%60;return(h?h+':':'')+p2(m)+':'+p2(s)+'.'+String(ms%1000).padStart(3,'0')};
+const fs=ms=>ms<60000?(ms/1000).toFixed(2)+'s':fmt(ms);
+const clock=()=>{const d=new Date();return p2(d.getHours())+':'+p2(d.getMinutes())+':'+p2(d.getSeconds())+'.'+String(d.getMilliseconds()).padStart(3,'0')};
+const buzz=()=>{try{navigator.vibrate&&navigator.vibrate(25)}catch(e){}};
+const anyRun=()=>S.list.some(w=>w.t0);
+let tt;function toast(m){const t=$('toast');t.textContent=m;t.classList.add('on');clearTimeout(tt);tt=setTimeout(()=>t.classList.remove('on'),1400)}
+function copyTxt(s){const ok=()=>toast('COPIED ✓');
+ try{navigator.clipboard.writeText(s).then(ok,fb)}catch(e){fb()}
+ function fb(){const a=document.createElement('textarea');a.value=s;a.style.cssText='position:fixed;opacity:0';document.body.appendChild(a);a.select();try{document.execCommand('copy');ok()}catch(e){toast('COPY FAILED')}a.remove()}}
+
+/* rings */
+function mkRing(box,r,sw,id){box.insertAdjacentHTML('afterbegin','<svg viewBox="0 0 200 200"><circle cx="100" cy="100" r="'+r+'" fill="none" stroke="var(--track)" stroke-width="'+sw+'"/><circle id="'+id+'" cx="100" cy="100" r="'+r+'" fill="none" stroke="var(--or)" stroke-width="'+sw+'" stroke-linecap="round" transform="rotate(-90 100 100)"/></svg>')}
+mkRing($('r1'),78,18,'rM');mkRing($('r2'),84,17,'rS');mkRing($('r3'),78,18,'rX');
+function ring(id,p){const e=$(id),C=+e.getAttribute('r')*2*Math.PI;e.setAttribute('stroke-dasharray',(p*C)+' '+C);e.style.opacity=p<.003?0:1}
+let raf;
+function frame(){const w=cur(),e=el(w);
+ $('nSec').textContent=p2(Math.floor(e/1000)%60);$('nMin').textContent=p2(Math.floor(e/60000)%60);$('nMs').textContent=String(e%1000).padStart(3,'0');
+ ring('rS',(e%60000)/60000);ring('rM',(e%3600000)/3600000);ring('rX',(e%1000)/1000);$('tot').textContent=fmt(e);
+ if(w.t0)raf=requestAnimationFrame(frame)}
+const kick=()=>{cancelAnimationFrame(raf);frame()};
+let wl;const wake=async()=>{try{wl=await navigator.wakeLock.request('screen')}catch(e){}};
+const rel=()=>{if(!anyRun()){try{wl&&wl.release()}catch(e){}}};
+
+/* actions */
+function go(){const w=cur(),n=Date.now();buzz();
+ if(w.t0){w.base+=n-w.t0;w.t0=null;w.stop=clock();rel()}
+ else{w.t0=n;if(w.start===null)w.start=clock();w.stop=null;wake()}
+ save();ui()}
+function lap(){const w=cur();if(!w.t0)return;buzz();const t=el(w),l=w.laps.length?w.laps[w.laps.length-1].t:0;w.laps.push({t,d:t-l});save();laps();calc();
+ const b=$('laps');if(b)b.scrollTop=0}
+function reset(){Object.assign(cur(),{base:0,t0:null,laps:[],start:null,stop:null});buzz();rel();save();ui()}
+const tgl=()=>{const w=anyRun()&&S.list.find(x=>x.t0);if(w)S.sel=S.list.indexOf(w);go()};
+const tlap=()=>{const w=S.list.find(x=>x.t0);if(w){S.sel=S.list.indexOf(w);lap()}};
+window.toggleWatch=go;window.lapWatch=lap;
+
+/* laps */
+function tabs(){$('tabs').innerHTML=S.list.map((w,i)=>'<button class="chip'+(i==S.sel?' on':'')+'" data-i="'+i+'">'+(w.t0?'<i></i>':'')+esc(w.name||('SW '+(i+1)))+'</button>').join('')}
+let armed=-1;
+function laps(){const w=cur(),n=w.laps.length;$('lc').textContent='Laps · '+n;
+ if(!n){$('laps').innerHTML='<div class="empty mono">NO LAPS YET</div>';return}
+ const L=w.laps.map(x=>x.d),a=L.reduce((x,y)=>x+y,0)/n;
+ $('laps').innerHTML=w.laps.map((x,i)=>{const dv=x.d-a;
+  return '<div class="card lp"><div class="bd">'+p2(i+1)+'</div><div><div class="lv">'+fs(x.d)+'</div><div class="ls mono">'+fmt(x.t)+'</div></div>'
+  +'<div class="dd mono'+(dv<=0?' f':'')+'">'+(n>1?(dv>0?'+':'−')+(Math.abs(dv)/1000).toFixed(2):'')+'</div>'
+  +'<button class="ib" data-c="'+i+'" aria-label="Copy lap">'+I.copy+'</button><button class="ib'+(armed==i?' arm':'')+'" data-x="'+i+'" aria-label="Delete lap">'+I.del+'</button></div>'}).reverse().join('')}
+$('laps').onclick=e=>{const w=cur();let b=e.target.closest('[data-c]');
+ if(b){const x=w.laps[+b.dataset.c];copyTxt((+b.dataset.c+1)+'\t'+(x.d/1000).toFixed(2)+'\t'+(x.t/1000).toFixed(2));return}
+ b=e.target.closest('[data-x]');if(!b)return;const i=+b.dataset.x;
+ if(armed==i){w.laps.splice(i,1);armed=-1;save();laps();calc();toast('LAP DELETED')}
+ else{armed=i;laps();setTimeout(()=>{if(armed==i){armed=-1;laps()}},2200)}};
+$('bCopyAll').innerHTML=I.copy+'COPY ALL';
+$('bCopyAll').onclick=()=>{const w=cur();if(!w.laps.length)return toast('NO LAPS');
+ const L=w.laps.map(x=>x.d),a=L.reduce((x,y)=>x+y,0)/L.length;
+ copyTxt('Lap\tTime(s)\tCumulative(s)\n'+w.laps.map((x,i)=>(i+1)+'\t'+(x.d/1000).toFixed(2)+'\t'+(x.t/1000).toFixed(2)).join('\n')+'\nAverage\t'+(a/1000).toFixed(2)+'\t')};
+
+/* calculate */
+const nf=n=>+n.toFixed(2);
+function srcMs(){if(S.src=='man')return((+S.mm||0)*60+(+S.ms||0))*1000;
+ return el(cur())*(S.rt||100)/100}
+function calc(){const t=srcMs()/1000,al=Math.min(+S.al||0,59)*60,base=3600-al;
+ $('cw').textContent=cur().name;$('cT').textContent=t?nf(t)+' s':'—';
+ const card=(el,ttl,num,f)=>{const c=t>0?num/t:0;
+  $(el).innerHTML='<div class="lb mono">'+ttl+'</div><div class="big">'+(t>0?Math.floor(c):'—')+'<small>pcs / hour</small></div><div class="fm mono">'+(t>0?'Capacity = '+num+' ÷ '+nf(t)+'s = '+nf(c)+(c%1?' → '+Math.floor(c)+' pcs':' pcs'):(S.src=='man'?'Enter time above':'Start the stopwatch first'))+'</div>'};
+ card('f1','Formula 1 · without allowance',3600);card('f2','Formula 2 · with allowance ('+nf(al/60)+' min)',base)}
+$('sg').onclick=e=>{const b=e.target.closest('button');if(b){S.src=b.dataset.s;save();cview()}};
+const bind=(id,k)=>{$(id).oninput=e=>{S[k]=Math.max(0,parseFloat(e.target.value)||0);save();calc()}};
+bind('rt','rt');bind('al','al');bind('mm','mm');bind('ms','ms');
+function cview(){[...$('sg').children].forEach(b=>b.classList.toggle('on',b.dataset.s==S.src));
+ $('gM').hidden=S.src!='man';$('lR').hidden=S.src=='man';calc()}
+function view(){const t=S.view=='T';$('vT').hidden=!t;$('vC').hidden=t;$('ctl').hidden=!t;
+ [...$('seg').children].forEach(b=>b.classList.toggle('on',b.dataset.v==S.view));if(t)kick();else cview()}
+$('seg').onclick=e=>{const b=e.target.closest('button');if(b){S.view=b.dataset.v;save();view()}};
+
+function ui(){const w=cur(),run=!!w.t0;
+ $('nm').value=w.name;$('cs').textContent=w.start||'--:--:--.---';$('ce').textContent=run?'RUNNING':(w.stop||'--:--:--.---');
+ $('bGo').innerHTML=lab(run?'stop':'play',run?'STOP':'START');
+ $('bLap').disabled=!run;$('prev').disabled=S.sel==0;$('next').disabled=S.sel==S.list.length-1;
+ $('bReset').disabled=!(w.t0||w.base||w.laps.length);$('bDel').style.display=S.list.length>1?'':'none';
+ $('rt').value=S.rt;$('al').value=S.al;$('mm').value=S.mm;$('ms').value=S.ms;
+ armed=-1;tabs();laps();kick();calc();floatSync()}
+
+/* ---------- floating pill ----------
+ Desktop Chrome: real HTML pill window with LAP / STOP buttons (Document PiP).
+ Phones: pill drawn on canvas -> video PiP; its media buttons = Pause → STOP, Next → LAP. */
+const fv=$('fv'),cvs=document.createElement('canvas'),cx=cvs.getContext('2d');cvs.width=600;cvs.height=150;
+try{fv.srcObject=cvs.captureStream(30)}catch(e){}
+const target=()=>S.list.find(x=>x.t0)||null;
+function paint(){const w=target(),W=600,H=150,x=5,y=5,pw=W-10,ph=H-10,per=2*(pw-ph)+Math.PI*ph;
+ cx.fillStyle='#16171a';cx.fillRect(0,0,W,H);
+ cx.beginPath();cx.roundRect(x,y,pw,ph,ph/2);cx.fillStyle='#000';cx.fill();cx.lineWidth=6;cx.strokeStyle='#2c2c2e';cx.stroke();
+ if(!w){cx.fillStyle='#8d9098';cx.font='600 26px sans-serif';cx.textAlign='center';cx.fillText('IE STOPWATCH',W/2,86);return}
+ const e=el(w);cx.save();cx.setLineDash([((e%60000)/60000)*per,per]);cx.strokeStyle='#f6b400';cx.lineCap='round';cx.beginPath();cx.roundRect(x,y,pw,ph,ph/2);cx.stroke();cx.restore();
+ cx.fillStyle='#fff';cx.beginPath();cx.arc(80,75,38,0,7);cx.fill();
+ cx.strokeStyle='#000';cx.lineWidth=5;cx.beginPath();cx.arc(80,81,18,0,7);cx.moveTo(80,81);cx.lineTo(80,69);cx.moveTo(72,51);cx.lineTo(88,51);cx.stroke();
+ cx.textAlign='left';cx.fillStyle='#fff';cx.font='800 38px monospace';cx.fillText(fmt(e),138,76);
+ cx.fillStyle='#8d9098';cx.font='500 22px sans-serif';cx.fillText((w.name||'SW')+' • '+w.laps.length+' laps',138,110);
+ [['LAP',352,'#3a3a3d','#fff'],['STOP',452,'#f6b400','#000']].forEach(b=>{cx.fillStyle=b[2];cx.beginPath();cx.roundRect(b[1],48,92,54,27);cx.fill();cx.fillStyle=b[3];cx.font='700 22px sans-serif';cx.textAlign='center';cx.fillText(b[0],b[1]+46,84)})}
+let pt=0,dp=null;
+async function vPip(){if(!document.pictureInPictureEnabled||!anyRun())return;
+ try{paint();await fv.play();if(document.pictureInPictureElement!==fv)await fv.requestPictureInPicture()}catch(e){}}
+async function openPip(){if(!anyRun())return toast('START FIRST');
+ if(window.documentPictureInPicture&&!dp){try{
+  dp=await documentPictureInPicture.requestWindow({width:420,height:116});const d=dp.document;
+  d.head.innerHTML='<style>body{margin:0;background:#16171a;height:100vh;display:grid;place-items:center;font-family:system-ui,sans-serif}.p{box-sizing:border-box;width:calc(100% - 10px);height:calc(100% - 10px);border-radius:999px;background:#000;border:4px solid #f6b400;display:flex;align-items:center;gap:10px;padding:0 10px;color:#fff}.g{flex:0 0 46px;height:46px;border-radius:50%;background:#fff;color:#000;display:grid;place-items:center;font-size:22px}.t{flex:1;min-width:0}.t b{display:block;font:800 21px ui-monospace,monospace}.t small{color:#8d9098;font-size:12px;white-space:nowrap}button{border:0;border-radius:99px;height:36px;padding:0 13px;font:700 12px system-ui;cursor:pointer}#l{background:#3a3a3d;color:#fff}#s{background:#f6b400;color:#000}</style>';
+  d.body.innerHTML='<div class="p"><div class="g">⏱</div><div class="t"><b id="a"></b><small id="b"></small></div><button id="l">LAP</button><button id="s">STOP</button></div>';
+  d.getElementById('l').onclick=tlap;d.getElementById('s').onclick=tgl;
+  const u=setInterval(()=>{const w=target();if(!w){dp&&dp.close();return}d.getElementById('a').textContent=fmt(el(w));d.getElementById('b').textContent=(w.name||'SW')+' • '+w.laps.length+' laps'},50);
+  dp.addEventListener('pagehide',()=>{clearInterval(u);dp=null});return}catch(e){dp=null}}
+ vPip()}
+function floatSync(){const run=anyRun();
+ if(run&&!pt){pt=setInterval(paint,50);paint()}
+ if(!run&&pt){clearInterval(pt);pt=0;try{document.pictureInPictureElement&&document.exitPictureInPicture().catch(()=>{});fv.pause();dp&&dp.close()}catch(e){}}
+ try{if('mediaSession' in navigator)navigator.mediaSession.playbackState=run?'playing':'paused'}catch(e){}}
+fv.onpause=()=>{if(anyRun())fv.play().catch(()=>{})};
+try{if('mediaSession' in navigator){navigator.mediaSession.metadata=new MediaMetadata({title:'IE Stopwatch'});
+ const ms=(a,f)=>{try{navigator.mediaSession.setActionHandler(a,f)}catch(e){}};
+ ms('enterpictureinpicture',vPip);ms('pause',tgl);ms('play',tgl);ms('stop',tgl);['nexttrack','previoustrack','seekforward','seekbackward'].forEach(a=>ms(a,tlap))}}catch(e){}
+$('bFloat').onclick=openPip;
+
+/* wiring */
+$('bLap').innerHTML=lab('lap','LAP');$('bReset').innerHTML=lab('reset','RESET');$('bAdd').innerHTML=lab('add','MULTI');
+$('bGo').onclick=go;$('bLap').onclick=lap;$('bReset').onclick=reset;
+$('bAdd').onclick=()=>{S.list.push(mk(S.list.length+1));S.sel=S.list.length-1;save();ui()};
+$('prev').onclick=()=>{if(S.sel>0){S.sel--;save();ui()}};
+$('next').onclick=()=>{if(S.sel<S.list.length-1){S.sel++;save();ui()}};
+$('tabs').onclick=e=>{const b=e.target.closest('.chip');if(b){S.sel=+b.dataset.i;save();ui()}};
+$('nm').oninput=e=>{cur().name=e.target.value;save();tabs()};
+(()=>{const b=$('bDel');let o=0;b.onclick=()=>{if(!o){o=1;b.textContent='SURE?';setTimeout(()=>{o=0;b.textContent='REMOVE'},2200)}else{o=0;b.textContent='REMOVE';S.list.splice(S.sel,1);S.sel=Math.max(0,S.sel-1);rel();save();ui()}}})();
+addEventListener('keydown',e=>{if(e.target.tagName=='INPUT'||S.view!='T')return;const k=e.key;
+ if(k=='AudioVolumeUp'||k=='VolumeUp'||k=='ArrowUp'||k==' '){e.preventDefault();if(!e.repeat)go()}
+ else if(k=='AudioVolumeDown'||k=='VolumeDown'||k=='ArrowDown'||k=='l'||k=='L'){e.preventDefault();if(!e.repeat)lap()}});
+document.addEventListener('visibilitychange',()=>{if(document.hidden){if(anyRun()&&!dp)vPip()}else{kick();if(anyRun())wake()}});
+ui();view();if(anyRun())wake();
+if('serviceWorker' in navigator)addEventListener('load',()=>navigator.serviceWorker.register('/sw.js').catch(()=>{}));
+setInterval(()=>{if(S.view=='C'&&cur().t0)calc()},200);
+</script>
+</body>
+</html>
