@@ -4,14 +4,6 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>IE Stopwatch</title>
-<meta name="theme-color" content="#1d1e22">
-<meta name="description" content="Multi-stopwatch with laps and capacity calculation for time studies.">
-<meta name="mobile-web-app-capable" content="yes">
-<meta name="apple-mobile-web-app-capable" content="yes">
-<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-<link rel="manifest" href="/manifest.webmanifest">
-<link rel="icon" href="/icons/icon.svg" type="image/svg+xml">
-<link rel="apple-touch-icon" href="/icons/apple-touch-icon.png">
 <link href="https://fonts.googleapis.com/css2?family=Archivo:wght@500;700;800&family=JetBrains+Mono:wght@400;600;700&display=swap" rel="stylesheet">
 <style>
 :root{--bg:#1d1e22;--card:#2a2c32;--card2:#24262b;--line:rgba(255,255,255,.08);--tx:#f2f2f4;--mu:#8d9098;--or:#f5762e;--yl:#f6b400;--track:#18191c;color-scheme:dark;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
@@ -53,6 +45,8 @@ header{display:grid;grid-template-columns:42px 1fr 42px;align-items:center;gap:8
 .pill{height:32px;padding:0 12px;border-radius:16px;border:1px solid var(--line);background:var(--card);color:var(--tx);font:600 10px 'JetBrains Mono',monospace;letter-spacing:.12em;cursor:pointer;display:flex;align-items:center;gap:6px}
 .pill svg{width:14px;height:14px}
 #laps{display:flex;flex-direction:column;gap:8px;height:324px;overflow-y:auto;overscroll-behavior:contain;-webkit-overflow-scrolling:touch;scrollbar-width:none;padding:2px;background:none}
+#laps{border-radius:24px}
+#laps .card{box-shadow:none}
 #laps::-webkit-scrollbar{display:none}
 .lp{flex:0 0 56px;height:56px;display:grid;grid-template-columns:34px 1fr auto 32px 32px;align-items:center;gap:8px;padding:0 9px 0 12px;border-radius:18px}
 .bd{font:700 12px 'JetBrains Mono',monospace;color:var(--mu)}
@@ -148,7 +142,8 @@ const save=()=>{try{localStorage.setItem('iesw2',JSON.stringify(S))}catch(e){}};
 const cur=()=>S.list[S.sel],el=w=>w.base+(w.t0?Date.now()-w.t0:0);
 const fmt=ms=>{ms=Math.max(0,Math.floor(ms));const h=Math.floor(ms/3600000),m=Math.floor(ms/60000)%60,s=Math.floor(ms/1000)%60;return(h?h+':':'')+p2(m)+':'+p2(s)+'.'+String(ms%1000).padStart(3,'0')};
 const fs=ms=>ms<60000?(ms/1000).toFixed(2)+'s':fmt(ms);
-const clock=()=>{const d=new Date();return p2(d.getHours())+':'+p2(d.getMinutes())+':'+p2(d.getSeconds())+'.'+String(d.getMilliseconds()).padStart(3,'0')};
+const clock=()=>{const d=new Date(),h=d.getHours(),h12=h%12||12;return p2(h12)+':'+p2(d.getMinutes())+':'+p2(d.getSeconds())+'.'+String(d.getMilliseconds()).padStart(3,'0')+' '+(h<12?'AM':'PM')};
+const to12=t=>{const m=/^(\d\d):(\d\d:\d\d\.\d{3})$/.exec(t||'');if(!m)return t;const h=+m[1];return p2(h%12||12)+':'+m[2]+' '+(h<12?'AM':'PM')};
 const buzz=()=>{try{navigator.vibrate&&navigator.vibrate(25)}catch(e){}};
 const anyRun=()=>S.list.some(w=>w.t0);
 let tt;function toast(m){const t=$('toast');t.textContent=m;t.classList.add('on');clearTimeout(tt);tt=setTimeout(()=>t.classList.remove('on'),1400)}
@@ -220,7 +215,7 @@ function view(){const t=S.view=='T';$('vT').hidden=!t;$('vC').hidden=t;$('ctl').
 $('seg').onclick=e=>{const b=e.target.closest('button');if(b){S.view=b.dataset.v;save();view()}};
 
 function ui(){const w=cur(),run=!!w.t0;
- $('nm').value=w.name;$('cs').textContent=w.start||'--:--:--.---';$('ce').textContent=run?'RUNNING':(w.stop||'--:--:--.---');
+ $('nm').value=w.name;$('cs').textContent=to12(w.start)||'--:--:--.---';$('ce').textContent=run?'RUNNING':(to12(w.stop)||'--:--:--.---');
  $('bGo').innerHTML=lab(run?'stop':'play',run?'STOP':'START');
  $('bLap').disabled=!run;$('prev').disabled=S.sel==0;$('next').disabled=S.sel==S.list.length-1;
  $('bReset').disabled=!(w.t0||w.base||w.laps.length);$('bDel').style.display=S.list.length>1?'':'none';
@@ -279,7 +274,6 @@ addEventListener('keydown',e=>{if(e.target.tagName=='INPUT'||S.view!='T')return;
  else if(k=='AudioVolumeDown'||k=='VolumeDown'||k=='ArrowDown'||k=='l'||k=='L'){e.preventDefault();if(!e.repeat)lap()}});
 document.addEventListener('visibilitychange',()=>{if(document.hidden){if(anyRun()&&!dp)vPip()}else{kick();if(anyRun())wake()}});
 ui();view();if(anyRun())wake();
-if('serviceWorker' in navigator)addEventListener('load',()=>navigator.serviceWorker.register('/sw.js').catch(()=>{}));
 setInterval(()=>{if(S.view=='C'&&cur().t0)calc()},200);
 </script>
 </body>
